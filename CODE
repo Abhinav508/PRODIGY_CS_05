@@ -1,0 +1,40 @@
+from scapy.all import sniff, IP, TCP, UDP, Raw, conf
+from datetime import datetime
+
+# Configure Scapy to use Layer 3 socket
+conf.L3socket = conf.L3socket
+conf.use_pcap = False
+conf.sniff_promisc = False
+
+def packet_callback(packet):
+    print("-" * 60)
+    print(f"Time: {datetime.now()}")
+
+    # Check for IP layer
+    if IP in packet:
+        ip_layer = packet[IP]
+        print(f"Source IP: {ip_layer.src}")
+        print(f"Destination IP: {ip_layer.dst}")
+        print(f"Protocol: {ip_layer.proto}")
+
+        # Check for TCP/UDP layers
+        if TCP in packet:
+            tcp_layer = packet[TCP]
+            print(f"TCP -> Source Port: {tcp_layer.sport}, Dest Port: {tcp_layer.dport}")
+        elif UDP in packet:
+            udp_layer = packet[UDP]
+            print(f"UDP -> Source Port: {udp_layer.sport}, Dest Port: {udp_layer.dport}")
+
+        # Display raw data payload if available
+        if Raw in packet:
+            payload = packet[Raw].load
+            print(f"Payload: {payload[:100]}")  # Limit to first 100 bytes
+
+# Start sniffing (Layer 3)
+print("Starting packet sniffing... Press Ctrl+C to stop.")
+try:
+    sniff(filter="ip", prn=packet_callback, store=False)
+except KeyboardInterrupt:
+    print("\nSniffing stopped by user.")
+except Exception as e:
+    print(f"\nAn error occurred: {e}")
